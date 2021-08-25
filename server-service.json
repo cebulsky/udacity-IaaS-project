@@ -1,0 +1,69 @@
+{
+	"variables": {
+		"client_id": "",
+		"client_secret": "",
+		"subscription_id": ""
+	},
+	"builders": [
+		{
+			"type": "azure-arm",
+			"client_id": "{{user `client_id`}}",
+			"client_secret": "{{user `client_secret`}}",
+			"subscription_id": "{{user `subscription_id`}}",
+			"os_type": "Linux",
+			"image_publisher": "Canonical",
+			"image_offer": "UbuntuServer",
+			"image_sku": "18.04-LTS",
+			"managed_image_resource_group_name": "packer-images-rg",
+			"managed_image_name": "TestFlaskAppServerImage",
+			"location": "West Europe",
+			"vm_size": "Standard_B1ls",
+			"azure_tags": {
+				"app": "webserver_hello_world"
+			}
+		}
+	],
+	"provisioners": [
+		{
+			"inline": [
+				"#!/bin/bash",
+				"apt-get update",
+				"apt-get upgrade -y",
+				"apt-get install python3-venv -y",
+				"mkdir flask_app",
+				"chmod -R 777 ./",
+				"cd flask_app",
+				"python3 -m venv venv",
+				"chmod -R 777 ./",
+				"ls",
+				"cd venv",
+				"ls",
+				"cd bin",
+				"ls"
+			],
+			"inline_shebang": "/bin/bash -e",
+			"type": "shell",
+			"execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'"
+		},
+		{
+			"type":"file",
+			"source": "hello_world.py",
+			"destination": "hello_world.py"
+		},
+		{
+			"inline": [
+				"#!/bin/bash",
+				"ls",
+				"chmod -R 777 ./",
+				". flask_app/venv/bin/activate",
+				"pip install flask",
+				"python -m flask --version",
+				"export FLASK_APP=hello_world.py",
+				"nohup python3 hello_world.py >> flask.log 2>&1 &"
+			],
+			"inline_shebang": "/bin/sh -x",
+			"type": "shell",
+			"execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'"
+		}
+	]
+}
